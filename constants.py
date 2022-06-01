@@ -31,8 +31,8 @@ folds = ['f1']
 #ADD CONVERT_MAT BOOL
 
 #Prediction
-predict_folder = "images/all_images/7102"
-output_folder = "images/all_images/7102"
+predict_folder = "images"
+output_folder = "output"
 model_patch_size = 256 # the patch size that predicting model was trained on
 avg_vds = [0.2, 0.3] # the vein density to normalize each sliding window 
 sliding_window_lengths =  [32, 128] #
