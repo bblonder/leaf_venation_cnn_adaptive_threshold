@@ -1192,7 +1192,10 @@ def predict_with_vd_thresholding(predict_folder, output_folder, test_case, patch
     img = Image.open(os.path.join(os.getcwd(), predict_folder, test_case)).convert("L")
     img = ImageOps.autocontrast(img, cutoff = 0.01)
     img = np.array(img)
-
+    for elem in img.shape:
+        if elem < 256:
+            print("the dimensions of the image are too small in one or both dimensions - please check and resize image if necessary")
+            return
     roi_test_sample = test_case[:-8] + '_roi.png'
     # region of interest
     roi = Image.open(os.path.join(os.getcwd(), predict_folder, roi_test_sample)).convert("L")
@@ -1295,18 +1298,18 @@ def predict_with_vd_thresholding(predict_folder, output_folder, test_case, patch
                 #     plt.imshow(pred_img)
                 #     plt.show()
                     
-    # voting
-    #pred_res = np.zeros(img.shape)
-    #pred_res[pred_seg > (weit_seg / 2)] = 1
-    #pred_res[pred_seg < (weit_seg / 2)] = 0
-    print("averaging")
-    # averaging
-    weit_seg = 1 / weit_seg
-    thresh_seg = np.multiply(thresh_seg, weit_seg)
+    if voting:
+        pred_res = np.zeros(img.shape)
+        pred_res[pred_seg > (weit_seg / 2)] = 1
+        pred_res[pred_seg < (weit_seg / 2)] = 0
+    else:
+        # averaging
+        weit_seg = 1 / weit_seg
+        thresh_seg = np.multiply(thresh_seg, weit_seg)
     
     #saving images
     result_save_folder = output_folder
-    Image.fromarray(thresh_seg * 255).convert('L').save(os.path.join(result_save_folder, test_case + '_cnn_vote' + f"_{sliding_window_length}_" + str(avg_vd) + '.png'))
+    Image.fromarray(thresh_seg * 255).convert('L').save(os.path.join(result_save_folder, test_case + '_cnn' + f"_{sliding_window_length}_" + str(avg_vd) + '.png'))
         
     return
 
