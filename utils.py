@@ -19,7 +19,6 @@ import h5py
 import shutil
 from scipy.ndimage.filters import gaussian_filter
 import itertools
-import matlab.engine
 import queue
 import multiprocessing as mp
 import matplotlib.pyplot as plt
@@ -35,7 +34,6 @@ import gc
 sns.set_style('ticks')
 # the path should point to the FIt-SNE directory
 import sys; sys.path.append('../../FIt-SNE')
-from fast_tsne import fast_tsne
 import openpyxl
 from constants import *
 import warnings
