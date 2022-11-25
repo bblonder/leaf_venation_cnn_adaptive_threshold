@@ -75,7 +75,7 @@ def make_fold_folders(num_folds):
             count_exp += 1
         count_folds += 1
     os.rename(os.path.join(folds_folder, 'f' + str(num_folds)), os.path.join(folds_folder, 'f_tsne'))
-    
+
 
 # computes the dice validation score between a prediction and the actual
 def dice(bm_pred, bm_val):
@@ -157,14 +157,14 @@ def prep_image(fold, exp, img_name, numerator, patch_size, patches_per_image, cp
     # meshgrid of possible patch locations
     x = np.arange(0.75 * prerotated_patch_size, roi_t.shape[0] - 0.75 * prerotated_patch_size, 20)
     y = np.arange(0.75 * prerotated_patch_size, roi_t.shape[1] - 0.75 * prerotated_patch_size, 20)
-   
+
     xx, yy = np.meshgrid(x, y, sparse=False)
     xx = np.resize(xx, (np.product(xx.shape)))
     yy = np.resize(yy, (np.product(yy.shape)))
 
-   
+
     kk = list(range(np.product(yy.shape)))
-   
+
     # constructing the patches now
     while k < patches_per_image:
         # pick a random patch location
@@ -187,7 +187,7 @@ def prep_image(fold, exp, img_name, numerator, patch_size, patches_per_image, cp
             img_crop = img[x1:x2, y1:y2]
             # section of seg within roi bounding box
             seg_crop = seg[x1:x2, y1:y2]
-            
+
             #rotating larger patch
             # rotates image by same factor that roi was rotated by
             rotated_img = Image.fromarray(img_crop[x_min:x_max, y_min:y_max])
@@ -229,19 +229,19 @@ def prep_image(fold, exp, img_name, numerator, patch_size, patches_per_image, cp
                     cv2.circle(img_patch, (random_state.randint(20, patch_size - 20), random_state.randint(20, patch_size - 20)), random.randint(0, 10), (0, 0, 0), thickness=np.random.randint(2, 4), lineType=cv2.LINE_AA, shift=0)
 
             #multivariate normal
-            img_patch = img_patch.astype('int16') 
+            img_patch = img_patch.astype('int16')
 
             #gaussian noise
             if random_state.rand(1) > G_NOISE:
 
-                multivar = stats.multivariate_normal(mean=[random_state.randint(5, patch_size - 5), random_state.randint(5, patch_size - 5)], 
+                multivar = stats.multivariate_normal(mean=[random_state.randint(5, patch_size - 5), random_state.randint(5, patch_size - 5)],
                            cov=[[np.random.randint(3000, 4500), 0], [0, np.random.randint(3000, 4500)]], seed = random_state)
                 x, y = np.mgrid[0:patch_size, 0:patch_size]
                 pos = np.dstack((x, y))
                 multivar_pix = multivar.pdf(pos)
                 multivar_max = np.amax(multivar_pix)
                 multivar  = np.array(multivar_pix)
-                
+
                 multivar = multivar / multivar_max * random_state.randint(50, 70)
                 if random_state.rand(1) > 0.5:
                     img_patch = img_patch + multivar * 1
@@ -251,7 +251,7 @@ def prep_image(fold, exp, img_name, numerator, patch_size, patches_per_image, cp
                 img_patch[img_patch > 255] = 255
                 #wraparound below 255
                 img_patch[img_patch < 0] = 0
-      
+
             #adjusting brightness
             img_patch = np.add(img_patch, random_state.randint(-BRIGHT_MAG, BRIGHT_MAG))
             #case where wraparound above 255 occurs
@@ -259,7 +259,7 @@ def prep_image(fold, exp, img_name, numerator, patch_size, patches_per_image, cp
             #wraparound below 255
             img_patch[img_patch < 0] = 0
 
-            img_patch = img_patch.astype('uint8') 
+            img_patch = img_patch.astype('uint8')
 
             #flipping
             if random_state.rand(1) > FLIP_UD:
@@ -277,29 +277,29 @@ def prep_image(fold, exp, img_name, numerator, patch_size, patches_per_image, cp
             if random_state.rand(1) > FT_PROB:
                 transformed_patch = np.fft.fft2(img_patch)
                 contrasted_patch = linalg.fractional_matrix_power(transformed_patch, random_state.uniform(0.95, 1.02))
-                img_patch = np.abs(np.fft.ifft2(contrasted_patch))       
+                img_patch = np.abs(np.fft.ifft2(contrasted_patch))
 
             img_patch = Image.fromarray(img_patch).convert('L')
-            
+
             #CLAHE if necessary
             if "CLAHE" not in img_name:
                 x = random_state.uniform(0, 0.02)
                 img_patch = ImageOps.autocontrast(img_patch, cutoff = x)
-          
+
             img_patch = np.array(img_patch)
-           
-            
+
+
 
             # converting to binary
             seg_patch[seg_patch < 0] = 0
             seg_patch[(seg_patch > 0) & (seg_patch <= 0.5)] = 0
             seg_patch[(seg_patch > 0.5)] = 1
-          
+
             # patch is added to array
             if k < trn_count:
                 img_trn_patches[k, ...] = img_patch[np.newaxis, ..., np.newaxis]
                 seg_trn_patches[k, ...] = seg_patch[np.newaxis, ..., np.newaxis]
-            
+
             else:
                 img_val_patches[k - trn_count, ...] = img_patch[np.newaxis, ..., np.newaxis]
                 seg_val_patches[k - trn_count, ...] = seg_patch[np.newaxis, ..., np.newaxis]
@@ -314,8 +314,8 @@ def prep_image(fold, exp, img_name, numerator, patch_size, patches_per_image, cp
     np.save(os.path.join(save_dir, img_name + 'img_val_patches' + str(cpu) + '.npy'), img_val_patches)
     np.save(os.path.join(save_dir, img_name + 'seg_trn_patches' + str(cpu) + '.npy'), seg_trn_patches)
     np.save(os.path.join(save_dir, img_name + 'seg_val_patches' + str(cpu) + '.npy'), seg_val_patches)
-    
-    
+
+
 # we are preprocessing for both the training and validation datasets at the same time
 def prep(fold, exp, epoch, trn_imgs, numerator, patch_size, patches_per_image):  # takes in fold, exp, cwd
     # assuming this script is run from the main folder
@@ -348,14 +348,14 @@ def prep(fold, exp, epoch, trn_imgs, numerator, patch_size, patches_per_image): 
     ks = 0
     trn_imgs = [x for x in trn_imgs if x[0] != '.']
     #use multiprocessing on each image
-    
+
     #process for each image
     img_files = os.listdir(image_folder)
     num_images = len(img_files)
     p = {}
 
     #creates a new process for each image and assigns it to number in dictionary
-    for img_num in range(num_images): 
+    for img_num in range(num_images):
         img_name = img_files[img_num]
         for cpu in range(available_cpus):
             p[cpu] = mp.Process(target=prep_image, args=(fold, exp, img_name, numerator // available_cpus, patch_size, patches_per_image // available_cpus, cpu))
@@ -393,10 +393,10 @@ def prep(fold, exp, epoch, trn_imgs, numerator, patch_size, patches_per_image): 
     for ks in range(1, num_images + 1):
         img_name = img_files[ks - 1]
         data_folder = os.path.join(os.getcwd(), 'folds', fold, 'preprocessed_data', exp, img_name)
-   
+
         for filename in os.listdir(data_folder):
             patches = np.load(os.path.join(data_folder, filename))
-    
+
             if 'img_trn_patches.npy' in filename:
                 img_trn_data[(ks - 1) * trn_count:ks * trn_count] = patches
             if 'seg_trn_patches.npy' in filename:
@@ -425,7 +425,7 @@ def prep(fold, exp, epoch, trn_imgs, numerator, patch_size, patches_per_image): 
 
 #separates images into folds
 def separate_test(num_folds, num_test_images):
-    
+
     cwd = os.getcwd()
     all_images_folder = os.path.join(cwd, 'images', 'all_images')
     all_image_names = os.listdir(all_images_folder)
@@ -433,13 +433,13 @@ def separate_test(num_folds, num_test_images):
     images_seen = []
     comb = list(itertools.combinations(all_image_names, num_test_images))
 
-    
+
 
     for fold in range(num_folds):
         os.mkdir(os.path.join(cwd, 'images', 'f' + str(fold + 1)))
         os.mkdir(os.path.join(cwd, 'images', 'f' + str(fold + 1), 'test'))
         os.mkdir(os.path.join(cwd, 'images', 'f' + str(fold + 1), 'train_and_val'))
-        
+
         while len(images_seen) == fold:
             image_combination = comb[random.randint(0, len(comb) - 1)] #array of strings
             unique = True
@@ -453,7 +453,7 @@ def separate_test(num_folds, num_test_images):
                 shutil.copytree(os.path.join(all_images_folder, image_name), os.path.join(cwd, 'images', 'f' + str(fold + 1), 'test', image_name))
             else:
                 shutil.copytree(os.path.join(all_images_folder, image_name), os.path.join(cwd, 'images', 'f' + str(fold + 1), 'train_and_val', image_name))
-    
+
     os.mkdir(os.path.join(cwd, 'images', 'f_tsne'))
     os.mkdir(os.path.join(cwd, 'images', 'f_tsne', 'test'))
     os.mkdir(os.path.join(cwd, 'images', 'f_tsne', 'train_and_val'))
@@ -631,7 +631,7 @@ def train(fold, exp, init_val, end_val, numerator, patch_size, patches_per_image
         # specifies location where the new model is to be saved
         # may be a newer approach
         model_checkpoint = ModelCheckpoint(model_check_file, monitor='val_loss', save_best_only=False)
-        
+
         model.fit(img_train, seg_train, batch_size=BATCH_SIZE, epochs=1, verbose=1, shuffle=True, validation_split=val_split,
                   callbacks=[model_checkpoint, tensorboard_callback])
         print(fold, test_folder, test_case, model_check_file, epoch_number)
@@ -641,7 +641,7 @@ def train(fold, exp, init_val, end_val, numerator, patch_size, patches_per_image
         #subprocess.call(['sh', './calc_leaf_metrics_for_epoch.sh', fold, test_case, test_case, "False", str(k_init)])
         print("saved")
         #cuda.select_device(gpu)
-        #cuda.close() 
+        #cuda.close()
 
     #dice_validation(fold, exp)
     #plot_vein_stats(fold, test_case, k_init)
@@ -681,7 +681,7 @@ def plot_vein_stats(fold, test_case, epochs):
     plt.savefig(path + '/vein_loopiness.png')
 
     return
-  
+
 # similarity between the output seg image and hand-traced seg image
 def dice_validation(fold, exp):
     # all patches
@@ -704,7 +704,7 @@ def dice_validation(fold, exp):
         else:
             str_cmp = str(model_file_init[0:8] + str(epoch_number))
             model_file = [s for s in model_list_init if str_cmp in s]
-        print(model_file) 
+        print(model_file)
         model_list.append(str(model_file[0]))
 
     D = []
@@ -759,7 +759,7 @@ def f_test(fold, exp):
             str_cmp = str(model_file_init[0:8] + str(epoch_number))
             model_file = [s for s in model_list_init if str_cmp in s]
         model_list.append(str(model_file[0]))
-        
+
     model_file = model_list[max_dice_index]
     max_dice = []
     max_dice.append(model_file)
@@ -816,7 +816,7 @@ def f_test(fold, exp):
                 y_max = int(yi + patch_size)
                 patch_samples[k, ..., 0] = img[x_min:x_max, y_min:y_max]
                 k += 1
-        
+
 
         pred_sample = model.predict(patch_samples, batch_size=1)
         pred_seg = np.zeros(img.shape)
@@ -883,7 +883,7 @@ def f_test(fold, exp):
             AUC += deltax * yavg
             prevr = srecall[j]
             prevp = sprecision[j]
-            
+
         #plotting and saving plot
         plt.scatter(rscores, pscores, label="AUC: " + str(AUC))
         plt.axis([0, 1, 0, 1])
@@ -964,7 +964,7 @@ def maketsne(pathes):
     print("finished prep")
     data_folder = [os.path.join(x + "/../../..", 'folds', 'f_tsne', 'preprocessed_data', 'exp1', 'training_data') for x in pathes]
     datasize = [len(x) for x in trn_imgs]
-    trn_img_data_stack = np.ndarray((sum(datasize) * trn_count, patch_size, patch_size), dtype='float32') 
+    trn_img_data_stack = np.ndarray((sum(datasize) * trn_count, patch_size, patch_size), dtype='float32')
     patch_vectors = np.ndarray((sum(datasize) * trn_count, patch_size * patch_size), dtype='float32') #-480 because of memory issues
 
 
@@ -1012,13 +1012,13 @@ def maketsne(pathes):
                 colors[count] = col[k]
                 count += 1
 
-    
+
     print('plotting')
     print(X50.shape)
     #tsne and plotting
     Z = fast_tsne(X50, late_exag_coeff=2, perplexity_list=[3,15,30,50])
     print(Z.shape)
-    
+
     plt.figure(figsize=(4,4))
     plt.axis('equal')
     plt.scatter(Z[:,0], Z[:,1], c = colors/255.0, s=16, edgecolors='none')
@@ -1038,7 +1038,7 @@ def predict(folder, fold, exp, model_name, patch_size):
     test_sample = os.listdir(test_folder)
     result_save_folder = folder
     #we probably have to make an array of these
-    
+
     #getting model location  from epoch
     model_location = os.path.join(os.getcwd(), 'folds', fold, 'model', exp, model_name)
     # list_of_files = glob.glob(model_folder + '/*') # * means all if need specific format then *.csv
@@ -1047,7 +1047,7 @@ def predict(folder, fold, exp, model_name, patch_size):
     # else:
     #     name = str(epoch)
     # model_location = [x for x in list_of_files if (name + '-') in x]
-  
+
     #model = load_model(model_location[-1], compile=False)
 
     #model_location= os.path.join(cwd, 'f11-256-weights.24-0.383.h5') #new
@@ -1065,14 +1065,14 @@ def predict(folder, fold, exp, model_name, patch_size):
             continue
         count += 1
         print('Test case: ' + test_case + 'Progress: ' + str(count) + ' / ' + str(len(test_sample)))
-         
+
         # #get vein density stats
         # ps = openpyxl.load_workbook(os.path.join(test_folder, 'results_table_epoch_' + str(epoch) + '.xlsx'))
         # sheet = ps['Sheet1']
         # avg_vd = sheet['H2'].value
         # avg_loopiness = sheet['AH2'].value
 
-       
+
 
         # original image
         img = Image.open(os.path.join(test_folder, test_case)).convert("L")
@@ -1086,8 +1086,8 @@ def predict(folder, fold, exp, model_name, patch_size):
         roi[roi < 0] = 0 #2
         roi[(roi > 0) & (roi <= 127.5)] = 0 #2
         roi[(roi > 127.5)] = 2 #0
-        
-     
+
+
         x = np.arange(0, img.shape[0] - patch_size, patch_size // 4)
         y = np.arange(0, img.shape[1] - patch_size, patch_size // 4)
         xx, yy = np.meshgrid(x, y, sparse=True)
@@ -1107,11 +1107,11 @@ def predict(folder, fold, exp, model_name, patch_size):
                 y_min = int(yi)
                 y_max = int(yi + patch_size)
                 patch_samples[k, ..., 0] = img[x_min:x_max, y_min:y_max]
-                pred_sample[k, ...] = model.predict(patch_samples[np.newaxis, k, ...]) 
+                pred_sample[k, ...] = model.predict(patch_samples[np.newaxis, k, ...])
                 pred_seg[x_min:x_max, y_min:y_max] += np.squeeze(pred_sample[k, ...])
                 weit_seg[x_min:x_max, y_min:y_max] += np.ones((patch_size, patch_size))
                 k += 1
- 
+
         if voting:
             pred_res = np.zeros(img.shape)
             pred_res[pred_seg > (weit_seg / 2)] = 1
@@ -1123,7 +1123,7 @@ def predict(folder, fold, exp, model_name, patch_size):
             pred_res = np.multiply(pred_seg, weit_seg)
 
 
-        
+
         #saving images
         Image.fromarray(pred_res * 255).convert('RGB').save(os.path.join(result_save_folder, test_case + '_cnn.png'))
     return
@@ -1140,7 +1140,7 @@ def convert_img_to_grayscale(folder):
     # will be all the window size/threshold combos
 
     for leaf in os.listdir(os.path.join(os.getcwd(), folder, "den512")):
-        # get image and grayscale it 
+        # get image and grayscale it
         if 'png' == leaf[-3:]:
             location = os.path.join(os.getcwd(), folder, "den512", leaf)
             img = Image.open(location).convert("L")
@@ -1148,7 +1148,7 @@ def convert_img_to_grayscale(folder):
     return
 
 
-def predict_with_vd_thresholding(predict_folder, output_folder, test_case, patch_size, avg_vd, sliding_window_length, model_location):
+def predict_with_vd_thresholding(predict_folder, output_folder, test_case, patch_size, avg_vd, sliding_window_length, voting, model_location):
     cwd = os.getcwd()
     #grab model
     #divide test image into patches
@@ -1156,7 +1156,7 @@ def predict_with_vd_thresholding(predict_folder, output_folder, test_case, patch
     #show output
 
     #we probably have to make an array of these
-    
+
     #getting model location  from epoch
     #model_folder = os.path.join(os.getcwd(), 'folds', fold, 'model', 'exp1')
     # list_of_files = glob.glob(model_folder + '/*') # * means all if need specific format then *.csv
@@ -1165,7 +1165,7 @@ def predict_with_vd_thresholding(predict_folder, output_folder, test_case, patch
     # else:
     #     name = str(epoch)
     # model_location = [x for x in list_of_files if (name + '-') in x]
-  
+
     #model = load_model(model_location[-1], compile=False)
 
     #model_location= os.path.join(cwd, 'f11-256-weights.24-0.383.h5') #new
@@ -1177,14 +1177,14 @@ def predict_with_vd_thresholding(predict_folder, output_folder, test_case, patch
     #     model_location = os.path.join(cwd, 'f15-1024-weights.31-0.316.h5')
     model = load_model(model_location, compile=False) #new
 
-        
+
     # #get vein density stats
     # ps = openpyxl.load_workbook(os.path.join(test_folder, 'results_table_epoch_' + str(epoch) + '.xlsx'))
     # sheet = ps['Sheet1']
     # avg_vd = sheet['H2'].value
     # avg_loopiness = sheet['AH2'].value
 
-    
+
 
     # original image
     img = Image.open(os.path.join(os.getcwd(), predict_folder, test_case)).convert("L")
@@ -1201,16 +1201,14 @@ def predict_with_vd_thresholding(predict_folder, output_folder, test_case, patch
     roi[roi < 0] = 0 #2
     roi[(roi > 0) & (roi <= 127.5)] = 0 #2
     roi[(roi > 127.5)] = 2 #0
-    
-    
+
+
     x = np.arange(0, img.shape[0] - patch_size, patch_size // 4)
     y = np.arange(0, img.shape[1] - patch_size, patch_size // 4)
     xx, yy = np.meshgrid(x, y, sparse=True)
-    pred_mask = np.zeros(img.shape)
-    pred_mask[0:xx[0][-1], 0:yy[-1][0]] = 1
 
-    patch_samples = np.ndarray((len(xx[0, ...]) * len(yy[..., 0]), patch_size, patch_size, 1), dtype='float32')
-    pred_sample = np.ndarray((len(xx[0, ...]) * len(yy[..., 0]), patch_size, patch_size, 1), dtype='float32')
+    #patch_samples = np.ndarray((len(xx[0, ...]) * len(yy[..., 0]), patch_size, patch_size, 1), dtype='float32')
+    #pred_sample = np.ndarray((len(xx[0, ...]) * len(yy[..., 0]), patch_size, patch_size, 1), dtype='float32')
 
     k = 0
     pred_seg = np.zeros(img.shape)
@@ -1221,11 +1219,12 @@ def predict_with_vd_thresholding(predict_folder, output_folder, test_case, patch
             x_max = int(xi + patch_size)
             y_min = int(yi)
             y_max = int(yi + patch_size)
-            patch_samples[k, ..., 0] = img[x_min:x_max, y_min:y_max]
-            pred_sample[k, ...] = model.predict(patch_samples[np.newaxis, k, ...]) 
-            pred_seg[x_min:x_max, y_min:y_max] += np.squeeze(pred_sample[k, ...])
+            patch_sample = img[x_min:x_max, y_min:y_max]
+            pred_sample = model.predict(patch_sample[np.newaxis, ...])
+            pred_seg[x_min:x_max, y_min:y_max] += np.squeeze(pred_sample)
             weit_seg[x_min:x_max, y_min:y_max] += np.ones((patch_size, patch_size))
             k += 1
+
 
     if voting:
         pred_res = np.zeros(img.shape)
@@ -1236,6 +1235,7 @@ def predict_with_vd_thresholding(predict_folder, output_folder, test_case, patch
     else:
         weit_seg = 1 / weit_seg
         pred_res = np.multiply(pred_seg, weit_seg)
+        del pred_seg
 
     x = np.arange(0, img.shape[0] - sliding_window_length, sliding_window_length // 4)
     y = np.arange(0, img.shape[1] - sliding_window_length, sliding_window_length // 4)
@@ -1262,11 +1262,11 @@ def predict_with_vd_thresholding(predict_folder, output_folder, test_case, patch
                     thresh_window = copy.deepcopy(pred_window)
                     thresh_window[thresh_window >= threshold[i]] = 1
                     thresh_window[thresh_window < threshold[i]] = 0
-                    
+
                     window_vd = get_vd_of_thresholded_patch(thresh_window, roi_window)
 
                     vein_densities.append(window_vd)
-                
+
                 #take patch with vd closest t   o the avg_vd
                 #print(vein_densities)
                 min_diff = 1e20
@@ -1295,7 +1295,7 @@ def predict_with_vd_thresholding(predict_folder, output_folder, test_case, patch
                 #     pred_img = Image.fromarray(pred_patch * 255).convert('RGB')
                 #     plt.imshow(pred_img)
                 #     plt.show()
-                    
+
     if voting:
         pred_res = np.zeros(img.shape)
         pred_res[pred_seg > (weit_seg / 2)] = 1
@@ -1304,11 +1304,11 @@ def predict_with_vd_thresholding(predict_folder, output_folder, test_case, patch
         # averaging
         weit_seg = 1 / weit_seg
         thresh_seg = np.multiply(thresh_seg, weit_seg)
-    
+
     #saving images
     result_save_folder = output_folder
     Image.fromarray(thresh_seg * 255).convert('L').save(os.path.join(result_save_folder, test_case + '_cnn' + f"_{sliding_window_length}_" + str(avg_vd) + '.png'))
-        
+
     return
 
 
@@ -1317,20 +1317,20 @@ def borneo_preprocess(location):
     #get the image and segs and downsample by 23.8 then upsample
     #save in images folder of lowresleafcnn15
     cwd = os.getcwd()
-    
+
     data_folder = os.path.join(os.getcwd(), location)
     image_folders = os.listdir(data_folder)
     result_save_folder = os.path.join(os.getcwd(), "images", "all_images")
     for image in image_folders:
-        img = np.array(Image.open(os.path.join(data_folder, image, image + "_img.png")).convert("L")) 
+        img = np.array(Image.open(os.path.join(data_folder, image, image + "_img.png")).convert("L"))
         seg = np.array(Image.open(os.path.join(data_folder, image, image + "_cnn_1.png")).convert("L"))
         roi = np.array(Image.open(os.path.join(data_folder, image, image + "_mask.png")).convert("L"))
         PIL_img = Image.fromarray(img).convert("L")
         img_width, img_height = PIL_img.size
-        PIL_seg = Image.fromarray(seg).convert("L") 
-        seg_width, seg_height = PIL_seg.size   
-        PIL_roi = Image.fromarray(roi).convert("L") 
-        roi_width, roi_height = PIL_roi.size   
+        PIL_seg = Image.fromarray(seg).convert("L")
+        seg_width, seg_height = PIL_seg.size
+        PIL_roi = Image.fromarray(roi).convert("L")
+        roi_width, roi_height = PIL_roi.size
 
         PIL_img = PIL_img.resize(((int) (img_width // 8), (int) (img_height // 8)))
         # PIL_seg = PIL_seg.resize(((int) (seg_width), (int) (seg_height)))
@@ -1339,10 +1339,10 @@ def borneo_preprocess(location):
         PIL_img = PIL_img.resize(((int) (img_width), (int) (img_height)))
        # PIL_seg = PIL_seg.resize(((int) (seg_width), (int) (seg_height)))
         #PIL_roi = PIL_roi.resize(((int) (roi_width), (int) (roi_height)))
-        
+
         if not (os.path.isdir(os.path.join(result_save_folder, image))):
             os.mkdir(os.path.join(result_save_folder, image))
-        
+
         PIL_img.convert('RGB').save(os.path.join(result_save_folder, image, image + '_img.png'))
         PIL_seg.convert('RGB').save(os.path.join(result_save_folder, image, image + '_seg.png'))
         PIL_roi.convert('RGB').save(os.path.join(result_save_folder, image, image + '_roi.png'))
@@ -1353,11 +1353,11 @@ def get_vd_of_thresholded_patch(thresh_patch, roi_patch):
     diff = roi_patch - thresh_patch
     white = np.count_nonzero(diff == 1)
     black = np.count_nonzero(diff == 2)
-    
+
     if black == 0 and white == 0:
         black = 1
     patch_vd = white / (black + white)
-    
+
     return patch_vd
 
 def display_vd_thresholds(folder, fold, patch_size, epoch, avg_vd, sliding_window_length):
@@ -1370,7 +1370,7 @@ def display_vd_thresholds(folder, fold, patch_size, epoch, avg_vd, sliding_windo
     test_sample = os.listdir(test_folder)
     result_save_folder = folder
     #we probably have to make an array of these
-    
+
     #getting model location  from epoch
     #model_folder = os.path.join(os.getcwd(), 'folds', fold, 'model', 'exp1')
     # list_of_files = glob.glob(model_folder + '/*') # * means all if need specific format then *.csv
@@ -1379,7 +1379,7 @@ def display_vd_thresholds(folder, fold, patch_size, epoch, avg_vd, sliding_windo
     # else:
     #     name = str(epoch)
     # model_location = [x for x in list_of_files if (name + '-') in x]
-  
+
     #model = load_model(model_location[-1], compile=False)
 
     #model_location= os.path.join(cwd, 'f11-256-weights.24-0.383.h5') #new
@@ -1397,14 +1397,14 @@ def display_vd_thresholds(folder, fold, patch_size, epoch, avg_vd, sliding_windo
             continue
         count += 1
         print('Test case: ' + test_case + 'Progress: ' + str(count) + ' / ' + str(len(test_sample)))
-         
+
         # #get vein density stats
         # ps = openpyxl.load_workbook(os.path.join(test_folder, 'results_table_epoch_' + str(epoch) + '.xlsx'))
         # sheet = ps['Sheet1']
         # avg_vd = sheet['H2'].value
         # avg_loopiness = sheet['AH2'].value
 
-       
+
 
         # original image
         img = Image.open(os.path.join(test_folder, test_case)).convert("L")
@@ -1419,8 +1419,8 @@ def display_vd_thresholds(folder, fold, patch_size, epoch, avg_vd, sliding_windo
         roi[roi < 0] = 0 #2
         roi[(roi > 0) & (roi <= 127.5)] = 0 #2
         roi[(roi > 127.5)] = 2 #0
-        
-     
+
+
         x = np.arange(0, img.shape[0] - patch_size, patch_size // 4)
         y = np.arange(0, img.shape[1] - patch_size, patch_size // 4)
         xx, yy = np.meshgrid(x, y, sparse=True)
@@ -1440,11 +1440,11 @@ def display_vd_thresholds(folder, fold, patch_size, epoch, avg_vd, sliding_windo
                 y_min = int(yi)
                 y_max = int(yi + patch_size)
                 patch_samples[k, ..., 0] = img[x_min:x_max, y_min:y_max]
-                pred_sample[k, ...] = model.predict(patch_samples[np.newaxis, k, ...]) 
+                pred_sample[k, ...] = model.predict(patch_samples[np.newaxis, k, ...])
                 pred_seg[x_min:x_max, y_min:y_max] += np.squeeze(pred_sample[k, ...])
                 weit_seg[x_min:x_max, y_min:y_max] += np.ones((patch_size, patch_size))
                 k += 1
- 
+
         # voting
         #pred_res = np.zeros(img.shape)
         #pred_res[pred_seg > (weit_seg / 2)] = 1
@@ -1479,11 +1479,11 @@ def display_vd_thresholds(folder, fold, patch_size, epoch, avg_vd, sliding_windo
                         thresh_window = copy.deepcopy(pred_window)
                         thresh_window[thresh_window >= threshold[i]] = 1
                         thresh_window[thresh_window < threshold[i]] = 0
-                        
+
                         window_vd = get_vd_of_thresholded_patch(thresh_window, roi_window)
 
                         vein_densities.append(window_vd)
-                    
+
                     #take patch with vd closest t   o the avg_vd
                     #print(vein_densities)
                     min_diff = 1e20
@@ -1512,7 +1512,7 @@ def display_vd_thresholds(folder, fold, patch_size, epoch, avg_vd, sliding_windo
                     #     pred_img = Image.fromarray(pred_patch * 255).convert('RGB')
                     #     plt.imshow(pred_img)
                     #     plt.show()
-                        
+
         # voting
         #pred_res = np.zeros(img.shape)
         #pred_res[pred_seg > (weit_seg / 2)] = 1
@@ -1521,7 +1521,7 @@ def display_vd_thresholds(folder, fold, patch_size, epoch, avg_vd, sliding_windo
         # averaging
         weit_seg = 1 / weit_seg
         thresh_seg = np.multiply(thresh_seg, weit_seg)
-        
+
         #saving images
         Image.fromarray(thresh_seg * 255).convert('RGB').save(os.path.join(result_save_folder, f"den{patch_size}", test_case + 'thresh_viz' + f"_{sliding_window_length}_" + str(avg_vd) + '.png'))
     return
@@ -1537,7 +1537,7 @@ def display_quality_regions(folder, fold, patch_size, epoch, list_of_vds, slidin
     test_sample = os.listdir(test_folder)
     result_save_folder = folder
     #we probably have to make an array of these
-    
+
     #getting model location  from epoch
     #model_folder = os.path.join(os.getcwd(), 'folds', fold, 'model', 'exp1')
     # list_of_files = glob.glob(model_folder + '/*') # * means all if need specific format then *.csv
@@ -1546,7 +1546,7 @@ def display_quality_regions(folder, fold, patch_size, epoch, list_of_vds, slidin
     # else:
     #     name = str(epoch)
     # model_location = [x for x in list_of_files if (name + '-') in x]
-  
+
     #model = load_model(model_location[-1], compile=False)
 
     #model_location= os.path.join(cwd, 'f11-256-weights.24-0.383.h5') #new
@@ -1564,14 +1564,14 @@ def display_quality_regions(folder, fold, patch_size, epoch, list_of_vds, slidin
             continue
         count += 1
         print('Test case: ' + test_case + 'Progress: ' + str(count) + ' / ' + str(len(test_sample)))
-         
+
         # #get vein density stats
         # ps = openpyxl.load_workbook(os.path.join(test_folder, 'results_table_epoch_' + str(epoch) + '.xlsx'))
         # sheet = ps['Sheet1']
         # avg_vd = sheet['H2'].value
         # avg_loopiness = sheet['AH2'].value
 
-       
+
 
         # original image
         img = Image.open(os.path.join(test_folder, test_case)).convert("L")
@@ -1585,8 +1585,8 @@ def display_quality_regions(folder, fold, patch_size, epoch, list_of_vds, slidin
         roi[roi < 0] = 2
         roi[(roi > 0) & (roi <= 127.5)] = 2
         roi[(roi > 127.5)] = 0
-        
-     
+
+
         x = np.arange(0, img.shape[0] - patch_size, patch_size // 4)
         y = np.arange(0, img.shape[1] - patch_size, patch_size // 4)
         xx, yy = np.meshgrid(x, y, sparse=True)
@@ -1606,11 +1606,11 @@ def display_quality_regions(folder, fold, patch_size, epoch, list_of_vds, slidin
                 y_min = int(yi)
                 y_max = int(yi + patch_size)
                 patch_samples[k, ..., 0] = img[x_min:x_max, y_min:y_max]
-                pred_sample[k, ...] = model.predict(patch_samples[np.newaxis, k, ...]) 
+                pred_sample[k, ...] = model.predict(patch_samples[np.newaxis, k, ...])
                 pred_seg[x_min:x_max, y_min:y_max] += np.squeeze(pred_sample[k, ...])
                 weit_seg[x_min:x_max, y_min:y_max] += np.ones((patch_size, patch_size))
                 k += 1
- 
+
         # voting
         #pred_res = np.zeros(img.shape)
         #pred_res[pred_seg > (weit_seg / 2)] = 1
@@ -1645,11 +1645,11 @@ def display_quality_regions(folder, fold, patch_size, epoch, list_of_vds, slidin
                         thresh_window = copy.deepcopy(pred_window)
                         thresh_window[thresh_window >= threshold[i]] = 1
                         thresh_window[thresh_window < threshold[i]] = 0
-                        
+
                         window_vd = get_vd_of_thresholded_patch(thresh_window, roi_window)
 
                         vein_densities.append(window_vd)
-                    
+
                     #take patch with vd closest t   o the avg_vd
                     #print(vein_densities)
                     best_thresholds = []
@@ -1663,7 +1663,7 @@ def display_quality_regions(folder, fold, patch_size, epoch, list_of_vds, slidin
                                 min_diff = vd_diff
                                 best_threshold_i = i
                         best_thresholds.append(threshold[best_threshold_i])
-                    
+
                     std_dev = np.std(best_thresholds)
                     #print(f"threshold: {threshold[best_threshold_i]}")
                     pred_window[:] = std_dev
@@ -1683,7 +1683,7 @@ def display_quality_regions(folder, fold, patch_size, epoch, list_of_vds, slidin
                     #     pred_img = Image.fromarray(pred_patch * 255).convert('RGB')
                     #     plt.imshow(pred_img)
                     #     plt.show()
-                        
+
         # voting
         #pred_res = np.zeros(img.shape)
         #pred_res[pred_seg > (weit_seg / 2)] = 1
@@ -1693,11 +1693,11 @@ def display_quality_regions(folder, fold, patch_size, epoch, list_of_vds, slidin
         # averaging
         weit_seg = 1 / weit_seg
         thresh_seg = np.multiply(thresh_seg, weit_seg)
-        
+
         maximum = np.amax(thresh_seg)
         thresh_seg = thresh_seg / maximum
         thresh_seg = 1 - thresh_seg
-        
+
         #saving images
         Image.fromarray(thresh_seg * 255).convert('RGB').save(os.path.join(result_save_folder, f"den{patch_size}", test_case + '_std' + f"_{sliding_window_length}_" + str(avg_vd) + '.png'))
     return

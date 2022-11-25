@@ -37,7 +37,7 @@ for imagename in imagenames:
     #filenames = os.listdir(os.path.join(os.getcwd(), predict_folder, imagename))
     output_folder_fold = os.path.join(os.getcwd(), output_folder, imagename[:-4])
     os.makedirs(output_folder_fold, exist_ok = True)
- 
+
     if 'img.png' not in imagename or 'cnn' in imagename:
         print(f"name of image, {imagename}, needs to be modified: must contain 'img.png', and must not be a CNN image")
         print(f"{count}/{total}")
@@ -47,7 +47,7 @@ for imagename in imagenames:
         for sliding_window_length in sliding_window_lengths:
             count += 1
             print(f'{count}/{total}: {imagename}, vein density {avg_vd}, sliding window length {sliding_window_length}')
-            predict_with_vd_thresholding(predict_folder, output_folder_fold, imagename, model_patch_size, avg_vd, sliding_window_length, model_location)
+            predict_with_vd_thresholding(predict_folder, output_folder_fold, imagename, model_patch_size, avg_vd, sliding_window_length, voting, model_location)
         #f_test(fold, exp)
 
 
