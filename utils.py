@@ -1226,7 +1226,6 @@ def predict_with_vd_thresholding(predict_folder, output_folder, test_case, patch
             weit_seg[x_min:x_max, y_min:y_max] += np.ones((patch_size, patch_size))
             k += 1
 
-    gc.collect()
 
     if voting:
         pred_res = np.zeros(img.shape)
@@ -1246,6 +1245,7 @@ def predict_with_vd_thresholding(predict_folder, output_folder, test_case, patch
     thresh_seg = np.zeros(img.shape)
     weit_seg = np.zeros(img.shape)
     for xi in xx[0, ...]:
+        gc.collect()
         for yi in yy[..., 0]:
             x_min = int(xi)
             x_max = int(xi + sliding_window_length)
@@ -1257,7 +1257,6 @@ def predict_with_vd_thresholding(predict_folder, output_folder, test_case, patch
             vein_densities = []
             #threshold loop
             roi_window = roi[x_min:x_max, y_min:y_max]
-            gc.collect()
             if np.count_nonzero(roi_window) > 0:
                 for i in range(len(threshold)):
                     #calculate vd for patch and add to array
@@ -1268,7 +1267,6 @@ def predict_with_vd_thresholding(predict_folder, output_folder, test_case, patch
                     window_vd = get_vd_of_thresholded_patch(thresh_window, roi_window)
 
                     vein_densities.append(window_vd)
-                gc.collect()
                 #take patch with vd closest to the avg_vd
                 #print(vein_densities)
                 min_diff = 1e20
