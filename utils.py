@@ -1308,6 +1308,9 @@ def predict_with_vd_thresholding(predict_folder, output_folder, test_case, patch
     result_save_folder = output_folder
     Image.fromarray(thresh_seg * 255).convert('L').save(os.path.join(result_save_folder, test_case + '_cnn' + f"_{sliding_window_length}_" + str(avg_vd) + '.png'))
 
+    #save vein overlaid image
+    C = np.dstack((thresh_seg * 255, img, thresh_seg * 255))
+    Image.fromarray(C).convert('RGB').save(os.path.join(result_save_folder, test_case + '_cnn' + f"_{sliding_window_length}_" + str(avg_vd) + '_overlay' +  '.png'))
     return
 
 
