@@ -1245,7 +1245,7 @@ def predict_with_vd_thresholding(predict_folder, output_folder, test_case, patch
     thresh_seg = np.zeros(img.shape)
     weit_seg = np.zeros(img.shape)
     for xi in xx[0, ...]:
-        #gc.collect()
+        gc.collect()
         for yi in yy[..., 0]:
             x_min = int(xi)
             x_max = int(xi + sliding_window_length)
