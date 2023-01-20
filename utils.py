@@ -1202,41 +1202,45 @@ def predict_with_vd_thresholding(predict_folder, output_folder, test_case, patch
     roi[(roi > 0) & (roi <= 127.5)] = 0 #2
     roi[(roi > 127.5)] = 2 #0
 
+    # prediction part
+    # check if prediction map exists - if not, make it
+    if not os.path.exists(f"{test_case}_pred_map.npy"):
+        x = np.arange(0, img.shape[0] - patch_size, patch_size // 4)
+        y = np.arange(0, img.shape[1] - patch_size, patch_size // 4)
+        xx, yy = np.meshgrid(x, y, sparse=True)
 
-    x = np.arange(0, img.shape[0] - patch_size, patch_size // 4)
-    y = np.arange(0, img.shape[1] - patch_size, patch_size // 4)
-    xx, yy = np.meshgrid(x, y, sparse=True)
+        #patch_samples = np.ndarray((len(xx[0, ...]) * len(yy[..., 0]), patch_size, patch_size, 1), dtype='float32')
+        #pred_sample = np.ndarray((len(xx[0, ...]) * len(yy[..., 0]), patch_size, patch_size, 1), dtype='float32')
 
-    #patch_samples = np.ndarray((len(xx[0, ...]) * len(yy[..., 0]), patch_size, patch_size, 1), dtype='float32')
-    #pred_sample = np.ndarray((len(xx[0, ...]) * len(yy[..., 0]), patch_size, patch_size, 1), dtype='float32')
-
-    k = 0
-    pred_seg = np.zeros(img.shape)
-    weit_seg = np.zeros(img.shape)
-    for xi in xx[0, ...]:
-        for yi in yy[..., 0]:
-            x_min = int(xi)
-            x_max = int(xi + patch_size)
-            y_min = int(yi)
-            y_max = int(yi + patch_size)
-            patch_sample = img[x_min:x_max, y_min:y_max]
-            # can potentially batch this
-            pred_sample = model.predict(patch_sample[np.newaxis, ...])
-            pred_seg[x_min:x_max, y_min:y_max] += np.squeeze(pred_sample)
-            weit_seg[x_min:x_max, y_min:y_max] += np.ones((patch_size, patch_size))
-            k += 1
+        k = 0
+        pred_seg = np.zeros(img.shape)
+        weit_seg = np.zeros(img.shape)
+        for xi in xx[0, ...]:
+            for yi in yy[..., 0]:
+                x_min = int(xi)
+                x_max = int(xi + patch_size)
+                y_min = int(yi)
+                y_max = int(yi + patch_size)
+                patch_sample = img[x_min:x_max, y_min:y_max]
+                # can potentially batch this
+                pred_sample = model.predict(patch_sample[np.newaxis, ...])
+                pred_seg[x_min:x_max, y_min:y_max] += np.squeeze(pred_sample)
+                weit_seg[x_min:x_max, y_min:y_max] += np.ones((patch_size, patch_size))
+                k += 1
 
 
-    if voting:
-        pred_res = np.zeros(img.shape)
-        pred_res[pred_seg > (weit_seg / 2)] = 1
-        pred_res[pred_seg < (weit_seg / 2)] = 0
-    #print("averaging")
-    # averaging
+        if voting:
+            pred_res = np.zeros(img.shape)
+            pred_res[pred_seg > (weit_seg / 2)] = 1
+            pred_res[pred_seg < (weit_seg / 2)] = 0
+        else:
+            weit_seg = 1 / weit_seg
+            pred_res = np.multiply(pred_seg, weit_seg)
+            del pred_seg
+        # save prediction map
+        np.save(f"{test_case}_pred_map.npy", pred_res)
     else:
-        weit_seg = 1 / weit_seg
-        pred_res = np.multiply(pred_seg, weit_seg)
-        del pred_seg
+        pred_res = np.load(f"{test_case}_pred_map.npy")
 
     x = np.arange(0, img.shape[0] - sliding_window_length, sliding_window_length // 4)
     y = np.arange(0, img.shape[1] - sliding_window_length, sliding_window_length // 4)
