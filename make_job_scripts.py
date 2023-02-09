@@ -21,7 +21,7 @@ for i in range(len(partitions)):
 #SBATCH --partition=savio2_gpu
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8
-#SBATCH --time=80:10:00
+#SBATCH --time=48:00:00
 
 module load python
 
