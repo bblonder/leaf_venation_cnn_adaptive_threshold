@@ -2,7 +2,10 @@ import os
 import numpy as np
 number_of_jobs = 3
 
-images = os.listdir("leaf_venation_cnn_adaptive_threshold/images")
+images = os.listdir("./images")
+images = [x for x in images if "_roi." not in x]
+if len(images) < number_of_jobs:
+    number_of_jobs = len(images)
 partitions = np.array_split(np.array(images), number_of_jobs)
 print(partitions)
 for i in range(len(partitions)):
