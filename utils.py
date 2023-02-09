@@ -31,6 +31,7 @@ import sklearn
 import subprocess
 import datetime
 import gc
+
 sns.set_style('ticks')
 # the path should point to the FIt-SNE directory
 import sys; sys.path.append('../../FIt-SNE')
