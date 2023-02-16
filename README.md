@@ -70,7 +70,7 @@ Sliding_window_lengths: An array with the sizes of the sliding windows, each ele
 Likewise, `predict_models.py` iterates over each file to be predicted on and calls the `predict_with_vd_thresholding` function, defined in `utils.py`, at all vein density and sliding window size combinations the user requests.
 
 
-Running Jobs on Savio
+## Running Jobs on Savio
 1. Collect all images and rois in a folder on Google Drive.
 2. Rclone the folder on to Savio in the raid directory.
 3. Change the path to point to this new images folder in make_jobs_scripts.py line 5.
