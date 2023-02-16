@@ -71,13 +71,13 @@ Likewise, `predict_models.py` iterates over each file to be predicted on and cal
 
 
 ## Running Jobs on Savio
-1. Collect all images and rois in a folder on Google Drive.
-2. Rclone the folder on to Savio in the raid directory.
+1. Collect all images and rois in a new folder on Google Drive.
+2. Rclone the new folder onto Savio in directory of your choice (scratch or user account).
 3. Change the path to point to this new images folder in make_jobs_scripts.py line 5.
-4. Adjust the number of jobs according to the number of images following roughly a 2 image : 1 job ratio for larger images and 4:1 for smaller images. This is done in make_jobs_scripts.py line 3.*
+4. Set the number of jobs according to the number of images following roughly a 2 image : 1 job ratio for larger images and 4:1 for smaller images. This is done in make_jobs_scripts.py line 3.*
 5. Run the following command: python3 make_job_scripts.py
-6. Go to the jobs folder and launch each job script by running the following command for each script: 
-7. Run __ to ensure each job is in the queue.
+6. Go to the jobs folder and launch each job script by running the following command for each script: sbatch {job name}.sh
+7. Run "squeue -u $USER" to ensure each job is in the queue.
 
 
 *Remember the following tradeoff: Increasing the number of jobs means more jobs have to be scheduled which increases time to process all images. However, having too few jobs means having more images per job which also increases time to process all images.
