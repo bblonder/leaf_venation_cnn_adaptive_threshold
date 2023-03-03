@@ -71,13 +71,15 @@ Likewise, `predict_models.py` iterates over each file to be predicted on and cal
 
 
 ## Running Jobs on Savio
-1. Collect all images and rois in a new folder on Google Drive.
-2. Rclone the new folder onto Savio in directory of your choice (scratch or user account).
-3. Change the path to point to this new images folder in make_jobs_scripts.py line 5.
-4. Set the number of jobs according to the number of images following roughly a 2 image : 1 job ratio for larger images and 4:1 for smaller images. This is done in make_jobs_scripts.py line 3.*
-5. Run the following command: python3 make_job_scripts.py
-6. Go to the jobs folder and launch each job script by running the following command for each script: sbatch {job name}.sh
-7. Run "squeue -u $USER" to ensure each job is in the queue.
+* On Google Drive, collect all images and rois into a new folder called 'images', and place this new folder within an outer folder on Google Drive (outer folder required due to some quirks of rclone).
+* Log into your Savio account with ssh, and then navigate to Savio's scratch directory by entering 'cd ../../../scratch/users/[your username]' into the command line.
+* git clone this repository with 'git clone https://github.com/bblonder/leaf_venation_cnn_adaptive_threshold.git' and then enter into the repository with 'cd leaf_venation_cnn_adaptive_threshold'.
+* 'module load rclone', and then 'rclone copy' the outer folder onto Savio into scratch directory. The inner folder will be copied into the directory.
+* If the new folder is not named 'images', change the path in make_jobs_scripts.py line 5 to be the name of the folder.
+* Set the number of jobs according to the number of images following roughly a 2 image : 1 job ratio for larger images and 4:1 for smaller images. This is done in make_jobs_scripts.py line 3.
+* Run the following command: 'module load python' and then 'python3 make_job_scripts.py'
+* Navigate into the 'jobs' folder and launch each job script by running the following command for each script: 'sbatch {job name}.sh'
+* Run "squeue -u $USER" to ensure each job is in the queue.
 
 
 *Remember the following tradeoff: Increasing the number of jobs means more jobs have to be scheduled which increases time to process all images. However, having too few jobs means having more images per job which also increases time to process all images.
