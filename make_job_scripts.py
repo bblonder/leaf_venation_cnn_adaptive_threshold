@@ -16,18 +16,15 @@ for i in range(len(partitions)):
     with open (file_name, 'w') as rsh:
         rsh.write(f'''\
 #!/bin/bash
-#SBATCH --job-name=test
+#SBATCH --job-name=predict
 #SBATCH --account=fc_mel
 #SBATCH --partition=savio2_gpu
 #SBATCH --gres=gpu:1
-#SBATCH --cpus-per-task=8
+#SBATCH --cpus-per-task=4
 #SBATCH --time=48:00:00
 
-module load python
-
-pip install --upgrade pip
-pip install opencv-python
-pip install tensorflow
+module load ml/tensorflow/2.5.0-py37
+pip install --user opencv-python
 
 cd leaf_venation_cnn_adaptive_threshold
 for i in {res}
